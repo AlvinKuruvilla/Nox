@@ -12,27 +12,28 @@ import (
 const workerPoolSize = 4
 
 func main() {
-	// create the consumer
-	consumer := Consumer{
+	service := Service{
 		ingestChan: make(chan int, 1),
 		jobsChan:   make(chan int, workerPoolSize),
 	}
+	// create the consumer
 
 	// Simulate external lib sending us 10 events per second
-	producer := Producer{callbackFunc: consumer.callbackFunc}
+	producer := Producer{callbackFunc: service.callbackFunc}
+
 	go producer.start()
 
 	// Set up cancellation context and waitgroup
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	wg := &sync.WaitGroup{}
 
-	// Start consumer with cancellation context passed
-	go consumer.startConsumer(ctx)
+	// Start service with cancellation context passed
+	go service.startService(ctx)
 
 	// Start workers and Add [workerPoolSize] to WaitGroup
 	wg.Add(workerPoolSize)
 	for i := 0; i < workerPoolSize; i++ {
-		go consumer.workerFunc(wg, i)
+		go service.workerFunc(wg, i)
 	}
 
 	// Handle sigterm and await termChan signal
